@@ -1,0 +1,213 @@
+# Thin wiring: custom_sentences/ru → intent_script. Управление и сцены: один вызов сервиса + короткий speech.
+# Статус-интенты (mvp_status_*): без чтения состояний в HA — только нейтральный speech + delay; интерпретация в FastAPI (P4b).
+
+mvp_lr_main_on:
+  speech:
+    text: "Включаю основной свет в гостиной"
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.living_room_main
+
+mvp_lr_main_off:
+  speech:
+    text: "Выключаю основной свет в гостиной"
+  action:
+    - service: light.turn_off
+      target:
+        entity_id: light.living_room_main
+
+mvp_lr_floor_on:
+  speech:
+    text: "Включаю торшер в гостиной"
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.living_room_floor_lamp
+
+mvp_lr_floor_off:
+  speech:
+    text: "Выключаю торшер в гостиной"
+  action:
+    - service: light.turn_off
+      target:
+        entity_id: light.living_room_floor_lamp
+
+mvp_lr_curtains_open:
+  speech:
+    text: "Открываю шторы в гостиной"
+  action:
+    - service: cover.open_cover
+      target:
+        entity_id: cover.living_room_curtains
+
+mvp_lr_curtains_close:
+  speech:
+    text: "Закрываю шторы в гостиной"
+  action:
+    - service: cover.close_cover
+      target:
+        entity_id: cover.living_room_curtains
+
+mvp_k_main_on:
+  speech:
+    text: "Включаю основной свет на кухне"
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.kitchen_main
+
+mvp_k_main_off:
+  speech:
+    text: "Выключаю основной свет на кухне"
+  action:
+    - service: light.turn_off
+      target:
+        entity_id: light.kitchen_main
+
+mvp_k_accent_on:
+  speech:
+    text: "Включаю подсветку на кухне"
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.kitchen_accent
+
+mvp_k_accent_off:
+  speech:
+    text: "Выключаю подсветку на кухне"
+  action:
+    - service: light.turn_off
+      target:
+        entity_id: light.kitchen_accent
+
+mvp_k_kettle_on:
+  speech:
+    text: "Включаю чайник на кухне"
+  action:
+    - service: switch.turn_on
+      target:
+        entity_id: switch.kitchen_kettle
+
+mvp_k_kettle_off:
+  speech:
+    text: "Выключаю чайник на кухне"
+  action:
+    - service: switch.turn_off
+      target:
+        entity_id: switch.kitchen_kettle
+
+mvp_br_main_on:
+  speech:
+    text: "Включаю основной свет в спальне"
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.bedroom_main
+
+mvp_br_main_off:
+  speech:
+    text: "Выключаю основной свет в спальне"
+  action:
+    - service: light.turn_off
+      target:
+        entity_id: light.bedroom_main
+
+mvp_br_bedside_on:
+  speech:
+    text: "Включаю прикроватный свет в спальне"
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.bedroom_bedside
+
+mvp_br_bedside_off:
+  speech:
+    text: "Выключаю прикроватный свет в спальне"
+  action:
+    - service: light.turn_off
+      target:
+        entity_id: light.bedroom_bedside
+
+mvp_br_curtains_open:
+  speech:
+    text: "Открываю шторы в спальне"
+  action:
+    - service: cover.open_cover
+      target:
+        entity_id: cover.bedroom_curtains
+
+mvp_br_curtains_close:
+  speech:
+    text: "Закрываю шторы в спальне"
+  action:
+    - service: cover.close_cover
+      target:
+        entity_id: cover.bedroom_curtains
+
+mvp_scene_good_morning:
+  speech:
+    text: "Запускаю сцену «Доброе утро»"
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.good_morning
+
+mvp_scene_evening:
+  speech:
+    text: "Запускаю вечернюю сцену"
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.evening
+
+mvp_scene_movie:
+  speech:
+    text: "Включаю режим кино"
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.movie
+
+mvp_scene_away:
+  speech:
+    text: "Запускаю сцену «Я ушёл»"
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.away
+
+mvp_status_living_room:
+  speech:
+    text: "Запрос статуса принят. Подробный статус доступен в интерфейсе."
+  action:
+    - delay:
+        seconds: 0
+
+mvp_status_kitchen:
+  speech:
+    text: "Проверяю статус. Подробный статус доступен в интерфейсе."
+  action:
+    - delay:
+        seconds: 0
+
+mvp_status_bedroom:
+  speech:
+    text: "Проверяю статус. Подробный статус доступен в интерфейсе."
+  action:
+    - delay:
+        seconds: 0
+
+mvp_status_kitchen_temp:
+  speech:
+    text: "Запрос статуса принят. Подробный статус доступен в интерфейсе."
+  action:
+    - delay:
+        seconds: 0
+
+mvp_status_bedroom_curtains:
+  speech:
+    text: "Запрос статуса принят. Подробный статус доступен в интерфейсе."
+  action:
+    - delay:
+        seconds: 0

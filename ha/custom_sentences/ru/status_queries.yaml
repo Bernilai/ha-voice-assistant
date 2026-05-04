@@ -1,0 +1,33 @@
+# Russian — запросы статуса (ответ формирует intent_script speech).
+language: ru
+
+intents:
+  mvp_status_living_room:
+    data:
+      - sentences:
+          - "что сейчас включено в гостиной"
+          - "статус гостиной"
+
+  mvp_status_kitchen:
+    data:
+      - sentences:
+          - "что сейчас на кухне"
+          - "статус кухни"
+
+  mvp_status_bedroom:
+    data:
+      - sentences:
+          - "что в спальне"
+          - "статус спальни"
+
+  mvp_status_kitchen_temp:
+    data:
+      - sentences:
+          - "какая температура на кухне"
+          - "температура на кухне"
+
+  mvp_status_bedroom_curtains:
+    data:
+      - sentences:
+          - "закрыты ли шторы в спальне"
+          - "шторы в спальне"

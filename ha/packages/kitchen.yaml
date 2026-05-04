@@ -1,0 +1,63 @@
+# Kitchen — virtual devices. IDs: kitchen_*
+
+input_boolean:
+  kitchen_main_internal:
+    name: "Kitchen Main Internal"
+  kitchen_accent_internal:
+    name: "Kitchen Accent Internal"
+  kitchen_kettle_internal:
+    name: "Kitchen Kettle Internal"
+  kitchen_window_sim:
+    name: "Kitchen Window Sim"
+
+template:
+  - light:
+      - unique_id: kitchen_main
+        name: "Kitchen Main"
+        state: "{{ is_state('input_boolean.kitchen_main_internal', 'on') }}"
+        turn_on:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.kitchen_main_internal
+        turn_off:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.kitchen_main_internal
+
+      - unique_id: kitchen_accent
+        name: "Kitchen Accent"
+        state: "{{ is_state('input_boolean.kitchen_accent_internal', 'on') }}"
+        turn_on:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.kitchen_accent_internal
+        turn_off:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.kitchen_accent_internal
+
+  - switch:
+      - unique_id: kitchen_kettle
+        name: "Kitchen Kettle"
+        state: "{{ is_state('input_boolean.kitchen_kettle_internal', 'on') }}"
+        turn_on:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.kitchen_kettle_internal
+        turn_off:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.kitchen_kettle_internal
+
+  - sensor:
+      - unique_id: kitchen_temperature
+        name: "Kitchen Temperature"
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state: "22.0"
+
+  - binary_sensor:
+      - unique_id: kitchen_window
+        name: "Kitchen Window"
+        device_class: window
+        state: "{{ is_state('input_boolean.kitchen_window_sim', 'on') }}"

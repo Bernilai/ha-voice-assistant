@@ -1,0 +1,46 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: ha-mvp-homeassistant
+    restart: unless-stopped
+    ports:
+      - "${HOMEASSISTANT_PORT:-8123}:8123"
+    volumes:
+      - ./ha:/config
+    environment:
+      - TZ=UTC
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ha-mvp-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      - HA_URL=${HA_URL:-http://homeassistant:8123}
+      - HA_TOKEN=${HA_TOKEN:-}
+      - VOICE_BRIDGE_ENABLED=${VOICE_BRIDGE_ENABLED:-}
+    depends_on:
+      - homeassistant
+    entrypoint: []
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  ui:
+    image: node:20-bookworm-slim
+    container_name: ha-mvp-ui
+    working_dir: /app
+    ports:
+      - "${UI_PORT:-5173}:5173"
+    environment:
+      - VITE_PROXY_TARGET=${VITE_PROXY_TARGET:-http://backend:8000}
+    volumes:
+      - ./ui:/app
+      - ui_node_modules:/app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    depends_on:
+      - backend
+
+volumes:
+  ui_node_modules:

@@ -1,0 +1,57 @@
+# Demo-friendly scenes. Entity IDs match packages (living_room, kitchen, bedroom).
+
+- id: good_morning
+  name: Доброе утро
+  icon: mdi:weather-sunny
+  entities:
+    light.living_room_main: on
+    light.kitchen_main: on
+    light.bedroom_main: on
+    cover.living_room_curtains:
+      state: open
+    cover.bedroom_curtains:
+      state: open
+    climate.bedroom_heater:
+      state: "heat"
+      temperature: 21
+
+- id: evening
+  name: Вечер
+  icon: mdi:weather-night
+  entities:
+    light.living_room_main: on
+    light.living_room_floor_lamp: on
+    light.kitchen_accent: on
+    light.bedroom_bedside: on
+    light.kitchen_main: off
+    light.bedroom_main: off
+
+- id: movie
+  name: Режим кино
+  icon: mdi:movie-open
+  entities:
+    light.living_room_main: off
+    light.living_room_floor_lamp: off
+    light.kitchen_main: off
+    light.kitchen_accent: on
+    cover.living_room_curtains:
+      state: closed
+
+- id: away
+  name: Я ушёл
+  icon: mdi:run
+  entities:
+    light.living_room_main: off
+    light.living_room_floor_lamp: off
+    light.kitchen_main: off
+    light.kitchen_accent: off
+    light.bedroom_main: off
+    light.bedroom_bedside: off
+    switch.kitchen_kettle: off
+    cover.living_room_curtains:
+      state: closed
+    cover.bedroom_curtains:
+      state: closed
+    climate.bedroom_heater:
+      state: "heat"
+      temperature: 17

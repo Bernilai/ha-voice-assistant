@@ -1,0 +1,46 @@
+# Environment
+.env
+.env.local
+*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Vite
+node_modules/
+dist/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Home Assistant runtime (bind-mounted config may grow these)
+ha/.storage/
+ha/deps/
+ha/tts/
+ha/www/
+ha/.cache/
+ha/*.log
+ha/*.log.*
+ha/home-assistant*.log*
+ha/*.db
+ha/*.db-shm
+ha/*.db-wal
+ha/.ha_run.lock

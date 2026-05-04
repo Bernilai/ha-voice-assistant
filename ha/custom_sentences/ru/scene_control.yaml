@@ -1,0 +1,29 @@
+# Russian — активация сцен (демо-устойчивые формулировки).
+language: ru
+
+intents:
+  mvp_scene_good_morning:
+    data:
+      - sentences:
+          - "доброе утро"
+          - "включи доброе утро"
+
+  mvp_scene_evening:
+    data:
+      - sentences:
+          - "включи вечер"
+          - "сделай вечер"
+
+  mvp_scene_movie:
+    data:
+      - sentences:
+          - "включи режим кино"
+          - "режим кино"
+
+  mvp_scene_away:
+    data:
+      - sentences:
+          - "я ушёл"
+          - "я ушел"
+          - "включи я ушёл"
+          - "включи я ушел"

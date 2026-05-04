@@ -1,0 +1,34 @@
+---
+alwaysApply: true
+---
+
+---
+description: Home Assistant integration boundaries
+alwaysApply: true
+---
+
+# Home Assistant rules
+
+Use Home Assistant for:
+- entity state
+- scenes
+- automations
+- scripts
+- conversation integration
+- custom sentences
+- intent_script
+- Assist pipeline integration where useful
+
+Do not:
+- implement core business logic in YAML unless it is trivial wiring
+- create duplicated state ownership outside Home Assistant
+- introduce unnecessary platform complexity
+
+Custom sentence files should live under:
+- `ha/custom_sentences/ru/`
+
+Important files:
+- `ha/configuration.yaml`
+- `ha/intent_script.yaml`
+- `ha/scenes.yaml`
+- `ha/packages/*.yaml`

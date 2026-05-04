@@ -1,0 +1,96 @@
+# Russian — базовое управление устройствами (ограниченный набор фраз для демо).
+language: ru
+
+intents:
+  # Демо: «включи/выключи свет в гостиной» (без слова «основной») = только light.living_room_main, не все светильники. Полный разбор/неоднозначность — в FastAPI (P4b+).
+  mvp_lr_main_on:
+    data:
+      - sentences:
+          - "включи основной свет в гостиной"
+          - "включи свет в гостиной"
+
+  mvp_lr_main_off:
+    data:
+      - sentences:
+          - "выключи основной свет в гостиной"
+          - "выключи свет в гостиной"
+
+  mvp_lr_floor_on:
+    data:
+      - sentences:
+          - "включи торшер в гостиной"
+
+  mvp_lr_floor_off:
+    data:
+      - sentences:
+          - "выключи торшер в гостиной"
+
+  mvp_lr_curtains_open:
+    data:
+      - sentences:
+          - "открой шторы в гостиной"
+
+  mvp_lr_curtains_close:
+    data:
+      - sentences:
+          - "закрой шторы в гостиной"
+
+  mvp_k_main_on:
+    data:
+      - sentences:
+          - "включи свет на кухне"
+
+  mvp_k_main_off:
+    data:
+      - sentences:
+          - "выключи свет на кухне"
+
+  mvp_k_accent_on:
+    data:
+      - sentences:
+          - "включи подсветку на кухне"
+
+  mvp_k_accent_off:
+    data:
+      - sentences:
+          - "выключи подсветку на кухне"
+
+  mvp_k_kettle_on:
+    data:
+      - sentences:
+          - "включи чайник на кухне"
+
+  mvp_k_kettle_off:
+    data:
+      - sentences:
+          - "выключи чайник на кухне"
+
+  mvp_br_main_on:
+    data:
+      - sentences:
+          - "включи основной свет в спальне"
+
+  mvp_br_main_off:
+    data:
+      - sentences:
+          - "выключи основной свет в спальне"
+
+  mvp_br_bedside_on:
+    data:
+      - sentences:
+          - "включи прикроватный свет в спальне"
+
+  mvp_br_bedside_off:
+    data:
+      - sentences:
+          - "выключи прикроватный свет в спальне"
+
+  mvp_br_curtains_open:
+    data:
+      - sentences:
+          - "открой шторы в спальне"
+
+  mvp_br_curtains_close:
+    data:
+      - sentences:
+          - "закрой шторы в спальне"

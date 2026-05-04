@@ -1,0 +1,91 @@
+# Bedroom — virtual devices + generic thermostat. IDs: bedroom_*
+
+input_boolean:
+  bedroom_main_internal:
+    name: "Bedroom Main Internal"
+  bedroom_bedside_internal:
+    name: "Bedroom Bedside Internal"
+  bedroom_curtains_closed:
+    name: "Bedroom Curtains Closed"
+  bedroom_heater_internal:
+    name: "Bedroom Heater Internal"
+
+template:
+  - light:
+      - unique_id: bedroom_main
+        name: "Bedroom Main"
+        state: "{{ is_state('input_boolean.bedroom_main_internal', 'on') }}"
+        turn_on:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.bedroom_main_internal
+        turn_off:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.bedroom_main_internal
+
+      - unique_id: bedroom_bedside
+        name: "Bedroom Bedside"
+        state: "{{ is_state('input_boolean.bedroom_bedside_internal', 'on') }}"
+        turn_on:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.bedroom_bedside_internal
+        turn_off:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.bedroom_bedside_internal
+
+  - cover:
+      - unique_id: bedroom_curtains
+        name: "Bedroom Curtains"
+        device_class: curtain
+        state: "{{ 'closed' if is_state('input_boolean.bedroom_curtains_closed', 'on') else 'open' }}"
+        open_cover:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.bedroom_curtains_closed
+        close_cover:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.bedroom_curtains_closed
+
+  - sensor:
+      - unique_id: bedroom_temperature
+        name: "Bedroom Temperature"
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state: "20.0"
+
+      - unique_id: bedroom_humidity
+        name: "Bedroom Humidity"
+        device_class: humidity
+        unit_of_measurement: "%"
+        state: "45"
+
+  - switch:
+      - unique_id: bedroom_heater
+        name: "Bedroom Heater"
+        state: "{{ is_state('input_boolean.bedroom_heater_internal', 'on') }}"
+        turn_on:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.bedroom_heater_internal
+        turn_off:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.bedroom_heater_internal
+
+climate:
+  - platform: generic_thermostat
+    name: Bedroom Heater
+    unique_id: bedroom_heater_thermostat
+    heater: switch.bedroom_heater
+    target_sensor: sensor.bedroom_temperature
+    min_temp: 16
+    max_temp: 26
+    ac_mode: false
+    cold_tolerance: 0.5
+    hot_tolerance: 0.5
+    precision: 0.1
+    target_temp: 21

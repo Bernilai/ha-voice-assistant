@@ -1,0 +1,64 @@
+# Living room — virtual devices (template + helpers). IDs: living_room_*
+
+input_boolean:
+  living_room_main_internal:
+    name: "Гостиная основной (внутр.)"
+  living_room_floor_internal:
+    name: "Гостиная торшер (внутр.)"
+  living_room_curtains_closed:
+    name: "Гостиная шторы закрыты"
+  living_room_motion_sim:
+    name: "Гостиная движение (симуляция)"
+
+template:
+  - light:
+      - unique_id: living_room_main
+        name: "Living Room Main"
+        state: "{{ is_state('input_boolean.living_room_main_internal', 'on') }}"
+        turn_on:
+          - service: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.living_room_main_internal
+        turn_off:
+          - service: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.living_room_main_internal
+
+      - unique_id: living_room_floor_lamp
+        name: "Living Room Floor Lamp"
+        state: "{{ is_state('input_boolean.living_room_floor_internal', 'on') }}"
+        turn_on:
+          - service: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.living_room_floor_internal
+        turn_off:
+          - service: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.living_room_floor_internal
+
+  - cover:
+      - unique_id: living_room_curtains
+        name: "Living Room Curtains"
+        device_class: curtain
+        state: "{{ 'closed' if is_state('input_boolean.living_room_curtains_closed', 'on') else 'open' }}"
+        open_cover:
+          - service: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.living_room_curtains_closed
+        close_cover:
+          - service: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.living_room_curtains_closed
+
+  - sensor:
+      - unique_id: living_room_temperature
+        name: "Living Room Temperature"
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state: "21.5"
+
+  - binary_sensor:
+      - unique_id: living_room_motion
+        name: "Living Room Motion"
+        device_class: motion
+        state: "{{ is_state('input_boolean.living_room_motion_sim', 'on') }}"

@@ -1,0 +1,11 @@
+# Home Assistant — integration/config only (SoT for house state). See packages/ for rooms.
+# https://www.home-assistant.io/docs/configuration/
+
+default_config:
+
+homeassistant:
+  name: MVP Home
+  packages: !include_dir_named packages
+
+intent_script: !include intent_script.yaml
+scene: !include scenes.yaml

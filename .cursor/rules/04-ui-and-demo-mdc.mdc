@@ -1,0 +1,39 @@
+---
+alwaysApply: true
+---
+
+---
+description: UI and demo behavior rules
+alwaysApply: true
+---
+
+# UI/Demo rules
+
+UI must prioritize engineering clarity and demo stability.
+
+Required UI areas:
+- Dashboard
+- Rooms/devices view
+- Event log
+- Command console
+- Clarification panel
+- Debug trace
+- Demo controls
+
+UI must show:
+- last user utterance
+- normalized intent
+- resolved entities
+- system response
+- current state
+- event history
+
+Prefer:
+- simple readable layout
+- deterministic demo flows
+- obvious reset/replay controls
+
+Avoid:
+- overdesigned fragile UI
+- hidden state mutations
+- voice-only critical flows
