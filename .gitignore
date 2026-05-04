@@ -21,15 +21,20 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# IDE
+# IDE / local agent (not published)
 .idea/
 .vscode/
+.cursor/
 *.swp
 *.swo
 
 # OS
 Thumbs.db
 .DS_Store
+
+# Local-only prompts and agent notes (not published)
+prompts/
+AGENTS.md
 
 # Home Assistant runtime (bind-mounted config may grow these)
 ha/.storage/
