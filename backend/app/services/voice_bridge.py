@@ -7,6 +7,14 @@ from app.models.intents import IntentInterpretResponse
 
 _VOICE_ROOMS: frozenset[str] = frozenset({"living_room", "kitchen", "bedroom"})
 
+# All device_types allowed for on/off via voice
+_VOICE_DEVICE_TYPES: frozenset[str] = frozenset({
+    "light",
+    "curtains",
+    "kettle",
+    "heater",
+})
+
 
 def voice_subset_policy_reason(interp: IntentInterpretResponse) -> str | None:
     """
@@ -19,8 +27,8 @@ def voice_subset_policy_reason(interp: IntentInterpretResponse) -> str | None:
     ent = interp.entities
 
     if intent in ("turn_on_device", "turn_off_device"):
-        if ent.get("device_type") != "light":
-            return "voice_light_only"
+        if ent.get("device_type") not in _VOICE_DEVICE_TYPES:
+            return "voice_device_type_not_in_subset"
         tid = ent.get("target_entity_id")
         if not isinstance(tid, str) or not tid.strip():
             return "voice_requires_target_entity_id"
@@ -33,6 +41,12 @@ def voice_subset_policy_reason(interp: IntentInterpretResponse) -> str | None:
         return None
 
     if intent == "get_room_status":
+        room = ent.get("room")
+        if room not in _VOICE_ROOMS:
+            return "voice_room_not_in_subset"
+        return None
+
+    if intent == "get_sensor_status":
         room = ent.get("room")
         if room not in _VOICE_ROOMS:
             return "voice_room_not_in_subset"
