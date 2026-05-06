@@ -39,7 +39,7 @@ from wyoming.wake import Detection
 
 BACKEND_URL       = "http://192.168.0.101:8000"
 OLLAMA_URL        = "http://192.168.0.101:11434"   # сервер с backend
-OLLAMA_MODEL      = "llama3.2:3b"                  # или gemma3:4b, qwen2.5:3b
+OLLAMA_MODEL      = "qwen2.5:3b"                  # или gemma3:4b, qwen2.5:3b
 
 WAKEWORD_HOST     = "localhost"
 WAKEWORD_PORT     = 10400
