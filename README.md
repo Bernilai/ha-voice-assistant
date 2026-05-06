@@ -84,8 +84,6 @@ npm run test
 | `backend/`      | FastAPI service                           |
 | `ui/`           | Vite + React + TypeScript demo UI       |
 | `docs/`         | Architecture, API contracts, setup      |
-| `prompts/`      | Staged Cursor prompts                     |
-| `.cursor/rules/`| Project rules for agents                |
 
 ## Documentation
 
