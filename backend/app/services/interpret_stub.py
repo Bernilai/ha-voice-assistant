@@ -9,7 +9,11 @@ from app.models.intents import IntentInterpretResponse
 
 
 def _norm(text: str) -> str:
-    return re.sub(r"\s+", " ", text.strip().lower())
+    t = text.strip().lower()
+    t = t.replace("ё", "е")
+    t = re.sub(r"[.!?,;:]+$", "", t)
+    t = re.sub(r"\s+", " ", t)
+    return t.strip()
 
 
 def interpret_text(raw: str) -> IntentInterpretResponse:
