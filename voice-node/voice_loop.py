@@ -1,4 +1,4 @@
-#!/usr/bin/env env python3
+#!/usr/bin/env python3
 """
 voice_loop.py — голосовой цикл voice-node.
 
@@ -6,7 +6,7 @@ voice_loop.py — голосовой цикл voice-node.
   1. Wake-word   — wyoming-openwakeword (TCP :10400)
   2. STT         — openai-whisper (локально)
   3. Backend     — POST /api/voice/transcript (interpret_stub)
-  4. LLM-фоллбак — Ollama (при outcome=fallback_to_text)
+  4. LLM-фоллбак — Ollama qwen2.5:3b (при outcome=fallback_to_text)
   5. TTS         — wyoming-piper (TCP :10200)
 
 Зависимости:
@@ -38,8 +38,8 @@ from wyoming.wake import Detection
 # ---------------------------------------------------------------------------
 
 BACKEND_URL       = "http://192.168.0.101:8000"
-OLLAMA_URL        = "http://192.168.0.101:11434"   # сервер с backend
-OLLAMA_MODEL      = "llama3.2:3b"                  # или gemma3:4b, qwen2.5:3b
+OLLAMA_URL        = "http://192.168.0.101:11434"
+OLLAMA_MODEL      = "qwen2.5:3b"
 
 WAKEWORD_HOST     = "localhost"
 WAKEWORD_PORT     = 10400
@@ -49,9 +49,9 @@ PIPER_PORT        = 10200
 
 MIC_DEVICE        = 0
 SAMPLE_RATE       = 16000
-RECORD_SECS       = 5        # максимальная длительность записи после вейкворда
+RECORD_SECS       = 5
 SILENCE_THRESHOLD = 0.008
-WHISPER_MODEL     = "small"   # tiny / base / small
+WHISPER_MODEL     = "small"
 
 # ---------------------------------------------------------------------------
 # Логгер
@@ -66,28 +66,41 @@ log = logging.getLogger("voice_loop")
 
 # ---------------------------------------------------------------------------
 # LLM system-промпт
+# English instructions + Russian synonyms = best accuracy for qwen2.5:3b
 # ---------------------------------------------------------------------------
 
 _LLM_SYSTEM = """\
-Ты — контроллер умного дома. Доступные устройства:
-- Свет: кухня (kitchen_main, kitchen_accent), гостиная (living_room_main, living_room_floor_lamp), спальня (bedroom_main, bedroom_bedside)
-- Шторы: гостиная (cover.living_room_curtains), спальня (cover.bedroom_curtains)
-- Чайник: switch.kitchen_kettle
-- Обогреватель: switch.bedroom_heater
-- Сцены: good_morning, evening, movie, away
+You are a smart home controller. Reply ONLY with valid JSON, no explanations, no markdown.
 
-intentы:
-  turn_on_device  → entities: room, device_type, target_entity_id
-  turn_off_device → entities: room, device_type, target_entity_id
-  activate_scene  → entities: scene (good_morning|evening|movie|away)
-  get_room_status → entities: room (kitchen|living_room|bedroom)
-  get_sensor_status → entities: room, sensor_kind (temperature|humidity)
+Available intents:
+  turn_on_device  -> entities: {room, device_type, target_entity_id}
+  turn_off_device -> entities: {room, device_type, target_entity_id}
+  activate_scene  -> entities: {scene}
+  get_room_status -> entities: {room}
 
-Отвечай ТОЛЬКО валидным JSON (без пояснений):
-{"intent": "...", "entities": {...}}
+Devices (Russian synonyms -> entity_id):
+  торшер, половой светник -> light.living_room_floor_lamp (room: living_room)
+  основной свет гостиная, потолочный свет гостиная -> light.living_room_main (room: living_room)
+  основной свет кухня -> light.kitchen_main (room: kitchen)
+  подсветка кухня -> light.kitchen_accent (room: kitchen)
+  основной свет спальня -> light.bedroom_main (room: bedroom)
+  прикроватный, ночной свет -> light.bedroom_bedside (room: bedroom)
+  шторы гостиная -> cover.living_room_curtains (room: living_room)
+  шторы спальня -> cover.bedroom_curtains (room: bedroom)
+  чайник -> switch.kitchen_kettle (room: kitchen)
+  обогреватель -> switch.bedroom_heater (room: bedroom)
 
-Если команда не про умный дом:
-{"intent": null, "reply": "короткий ответ"}
+Scenes: good_morning, evening, movie, away
+Rooms: kitchen, living_room, bedroom
+
+Examples:
+  "включи торшер" -> {"intent":"turn_on_device","entities":{"room":"living_room","device_type":"light","target_entity_id":"light.living_room_floor_lamp"}}
+  "выключи чайник" -> {"intent":"turn_off_device","entities":{"room":"kitchen","device_type":"kettle","target_entity_id":"switch.kitchen_kettle"}}
+  "включи свет на кухне" -> {"intent":"turn_on_device","entities":{"room":"kitchen","device_type":"light","target_entity_id":"light.kitchen_main"}}
+  "доброе утро" -> {"intent":"activate_scene","entities":{"scene":"good_morning"}}
+  "что в спальне" -> {"intent":"get_room_status","entities":{"room":"bedroom"}}
+
+If not a smart home command: {"intent": null, "reply": "<short answer in Russian>"}
 """
 
 # ---------------------------------------------------------------------------
@@ -96,7 +109,7 @@ intentы:
 
 _DEVICE_RU: dict[str, str] = {
     "light.kitchen_main":          "основной свет на кухне",
-    "light.kitchen_accent":        "подсветку на кухне",
+    "light.kitchen_accent":        "подсветка на кухне",
     "light.living_room_main":       "основной свет в гостиной",
     "light.living_room_floor_lamp": "торшер в гостиной",
     "light.bedroom_main":           "основной свет в спальне",
@@ -111,7 +124,7 @@ _SCENE_RU: dict[str, str] = {
     "good_morning": "доброе утро",
     "evening":      "вечер",
     "movie":        "кино",
-    "away":         "выходу из дома",
+    "away":         "выход из дома",
 }
 
 _ROOM_RU: dict[str, str] = {
@@ -122,14 +135,11 @@ _ROOM_RU: dict[str, str] = {
 
 
 def _spoken_from_backend(resp: dict) -> str:
-    """Build a short spoken reply from VoiceProcessResponse."""
     outcome = resp.get("outcome", "")
     if outcome == "executed":
         ex = resp.get("execute") or {}
-        # Если execute содержит spoken_response — используем его
         if ex.get("spoken_response"):
             return str(ex["spoken_response"])
-        # Иначе строим фразу сами
         interp = resp.get("interpret") or {}
         intent = interp.get("canonical_intent", "")
         entities = interp.get("entities") or {}
@@ -146,7 +156,6 @@ def _spoken_from_backend(resp: dict) -> str:
             summary = ex.get("result") or ex.get("summary") or "данные получены"
             return f"Статус {room}: {summary}"
         return "Готово."
-    # fallback / bridge_disabled
     return "Не понял команду."
 
 
@@ -155,12 +164,12 @@ def _spoken_from_backend(resp: dict) -> str:
 # ---------------------------------------------------------------------------
 
 async def _wait_wakeword() -> None:
-    log.info("Жду вейкворд (скажите «ассистент»)...")
+    log.info("Жду вейквord (скажите 'ассистент')...")
     async with AsyncTcpClient(WAKEWORD_HOST, WAKEWORD_PORT) as client:
         async for event in client:
             if Detection.is_type(event.type):
                 det = Detection.from_event(event)
-                log.info("Вейкворд: %s (score=%.3f)", det.name, det.score or 0.0)
+                log.info("Вейквord: %s (score=%.3f)", det.name, det.score or 0.0)
                 return
 
 
@@ -214,7 +223,6 @@ def _call_backend(text: str) -> dict:
 # ---------------------------------------------------------------------------
 
 def _llm_interpret(text: str) -> dict | None:
-    """Return parsed dict or None on failure."""
     try:
         resp = requests.post(
             f"{OLLAMA_URL}/api/chat",
@@ -230,7 +238,6 @@ def _llm_interpret(text: str) -> dict | None:
         )
         resp.raise_for_status()
         content = resp.json()["message"]["content"].strip()
-        # Вырезаем JSON даже если LLM обернул его в маркдаун
         m = re.search(r"\{.*\}", content, re.DOTALL)
         if not m:
             log.warning("LLM вернул не-JSON: %s", content[:120])
@@ -259,7 +266,6 @@ def _execute_via_backend(intent: str, entities: dict, utterance: str) -> dict:
 
 
 def _handle_llm_fallback(text: str) -> str:
-    """Return spoken text produced by LLM path."""
     log.info("LLM фоллбак: отправляю %r", text)
     parsed = _llm_interpret(text)
     if parsed is None:
@@ -267,18 +273,15 @@ def _handle_llm_fallback(text: str) -> str:
 
     intent = parsed.get("intent")
     if not intent:
-        # Свободный диалог
-        return str(parsed.get("reply", "Не удалось распознать команду."))
+        return str(parsed.get("reply", "Не понял команду."))
 
     entities = parsed.get("entities") or {}
     try:
         ex = _execute_via_backend(intent, entities, text)
-        log.info("LLM execute: %s", ex.get("status"))
+        log.info("LLM execute status: %s", ex.get("status"))
         if ex.get("spoken_response"):
             return str(ex["spoken_response"])
-        if ex.get("status") == "success":
-            return "Готово."
-        return "Произошла ошибка выполнения."
+        return "Готово." if ex.get("status") == "success" else "Произошла ошибка выполнения."
     except Exception as exc:
         log.warning("execute ошибка: %s", exc)
         return "Не удалось выполнить команду."
@@ -304,7 +307,7 @@ async def _speak_async(text: str) -> None:
             sd.play(arr, samplerate=22050, device=MIC_DEVICE)
             sd.wait()
     except Exception as exc:
-        log.warning("TTS ошибка (выводим в консоль): %s", exc)
+        log.warning("TTS ошибка (вывод в консоль): %s", exc)
         print(f"[Ответ] {text}")
 
 
@@ -323,11 +326,9 @@ def main() -> None:
 
     while True:
         try:
-            # --- Слой 1: ждём вейкворд ---
             asyncio.run(_wait_wakeword())
             _speak("Слушаю.")
 
-            # --- Слой 2: запись и STT ---
             audio = _record(RECORD_SECS)
             if _is_silence(audio):
                 log.info("Тишина, пропускаю.")
@@ -338,7 +339,6 @@ def main() -> None:
                 continue
             log.info("Транскрипт: %r", text)
 
-            # --- Слой 3: backend (interpret_stub) ---
             resp = _call_backend(text)
             outcome = resp.get("outcome", "")
             log.info("Backend outcome: %s", outcome)
@@ -346,12 +346,10 @@ def main() -> None:
             if outcome == "executed":
                 spoken = _spoken_from_backend(resp)
             elif outcome == "fallback_to_text":
-                # --- Слой 4: LLM-фоллбак ---
                 spoken = _handle_llm_fallback(text)
             else:
                 spoken = "Голосовой мост недоступен."
 
-            # --- Слой 5: TTS ---
             _speak(spoken)
 
         except KeyboardInterrupt:
