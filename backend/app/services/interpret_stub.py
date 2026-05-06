@@ -10,7 +10,7 @@ from app.models.intents import IntentInterpretResponse
 def _norm(text: str) -> str:
     t = text.strip().lower()
     t = t.replace("ё", "е")
-    t = re.sub(r"[.!?,;:]+$", "", t)
+    t = re.sub(r"[.!?,;:]+$", "")
     t = re.sub(r"\s+", " ", t)
     return t.strip()
 
@@ -80,6 +80,8 @@ _OPEN_LIVING_CURTAINS = {
     "откройте шторы в гостиной",
     "открыть шторы в гостиной",
     "откроем шторы в гостиной",
+    "раздвинь шторы в гостиной",
+    "раздвинуть шторы в гостиной",
 }
 
 _CLOSE_LIVING_CURTAINS = {
@@ -87,6 +89,8 @@ _CLOSE_LIVING_CURTAINS = {
     "закройте шторы в гостиной",
     "закрыть шторы в гостиной",
     "закроем шторы в гостиной",
+    "задвинь шторы в гостиной",
+    "задвинуть шторы в гостиной",
 }
 
 _OPEN_BEDROOM_CURTAINS = {
@@ -94,6 +98,8 @@ _OPEN_BEDROOM_CURTAINS = {
     "откройте шторы в спальне",
     "открыть шторы в спальне",
     "откроем шторы в спальне",
+    "раздвинь шторы в спальне",
+    "раздвинуть шторы в спальне",
 }
 
 _CLOSE_BEDROOM_CURTAINS = {
@@ -101,6 +107,8 @@ _CLOSE_BEDROOM_CURTAINS = {
     "закройте шторы в спальне",
     "закрыть шторы в спальне",
     "закроем шторы в спальне",
+    "задвинь шторы в спальне",
+    "задвинуть шторы в спальне",
 }
 
 _ON_KETTLE = {
@@ -110,6 +118,8 @@ _ON_KETTLE = {
     "включим чайник",
     "чайник включи",
     "чайник включить",
+    "поставь чайник",
+    "поставить чайник",
 }
 
 _OFF_KETTLE = {
@@ -126,6 +136,10 @@ _ON_HEATER = {
     "включите обогреватель в спальне",
     "включить обогреватель в спальне",
     "включим обогреватель в спальне",
+    "обогреватель в спальне включи",
+    "обогреватель в спальне включить",
+    "включи обогреватель",
+    "включить обогреватель",
 }
 
 _OFF_HEATER = {
@@ -133,6 +147,10 @@ _OFF_HEATER = {
     "выключите обогреватель в спальне",
     "выключить обогреватель в спальне",
     "выключим обогреватель в спальне",
+    "обогреватель в спальне выключи",
+    "обогреватель в спальне выключить",
+    "выключи обогреватель",
+    "выключить обогреватель",
 }
 
 _TEMP_BEDROOM = {
@@ -159,6 +177,8 @@ _TEMP_LIVING = {
     "сколько градусов в гостиной",
 }
 
+# Scenes -----------------------------------------------------------------------
+
 _SCENE_MOVIE = {
     "включи режим кино",
     "включить режим кино",
@@ -167,7 +187,43 @@ _SCENE_MOVIE = {
     "кинорежим",
     "поставь режим кино",
     "поставьте режим кино",
+    "киносеанс",
 }
+
+_SCENE_GOOD_MORNING = {
+    "доброе утро",
+    "включи режим доброе утро",
+    "включить режим доброе утро",
+    "включи сцену доброе утро",
+    "режим доброе утро",
+    "утренний режим",
+    "включи утренний режим",
+    "включить утренний режим",
+}
+
+_SCENE_EVENING = {
+    "вечерний режим",
+    "включи вечерний режим",
+    "включить вечерний режим",
+    "включи сцену вечер",
+    "режим вечер",
+    "сцена вечер",
+}
+
+_SCENE_AWAY = {
+    "я ухожу",
+    "я ушел",
+    "я ушла",
+    "включи режим я ушел",
+    "включить режим я ушел",
+    "режим ухожу",
+    "режим отсутствия",
+    "включи режим отсутствия",
+    "включить режим отсутствия",
+    "выходной режим",
+}
+
+# Room status ------------------------------------------------------------------
 
 _STATUS_KITCHEN = {
     "статус кухни",
@@ -177,11 +233,36 @@ _STATUS_KITCHEN = {
     "статус кухня",
 }
 
+_STATUS_LIVING = {
+    "статус гостиной",
+    "что в гостиной",
+    "что включено в гостиной",
+    "покажи статус гостиной",
+    "статус гостиная",
+}
+
+_STATUS_BEDROOM = {
+    "статус спальни",
+    "что в спальне",
+    "что включено в спальне",
+    "покажи статус спальни",
+    "статус спальня",
+}
+
+# Clarifications (missing room) ------------------------------------------------
+
 _CLARIFY_LIGHT_OFF = {
     "выключи свет",
     "выключить свет",
     "выключите свет",
     "выключим свет",
+}
+
+_CLARIFY_LIGHT_ON = {
+    "включи свет",
+    "включить свет",
+    "включите свет",
+    "включим свет",
 }
 
 
@@ -337,11 +418,51 @@ def interpret_text(raw: str) -> IntentInterpretResponse:
             status="success",
         )
 
+    if n in _SCENE_GOOD_MORNING:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="activate_scene",
+            entities={"scene": "good_morning"},
+            status="success",
+        )
+
+    if n in _SCENE_EVENING:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="activate_scene",
+            entities={"scene": "evening"},
+            status="success",
+        )
+
+    if n in _SCENE_AWAY:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="activate_scene",
+            entities={"scene": "away"},
+            status="success",
+        )
+
     if n in _STATUS_KITCHEN:
         return IntentInterpretResponse(
             raw_text=raw, normalized_text=n,
             canonical_intent="get_room_status",
             entities={"room": "kitchen"},
+            status="success",
+        )
+
+    if n in _STATUS_LIVING:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="get_room_status",
+            entities={"room": "living_room"},
+            status="success",
+        )
+
+    if n in _STATUS_BEDROOM:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="get_room_status",
+            entities={"room": "bedroom"},
             status="success",
         )
 
@@ -354,6 +475,23 @@ def interpret_text(raw: str) -> IntentInterpretResponse:
             clarification={
                 "reason": "missing_room",
                 "prompt": "В какой комнате выключить свет?",
+                "options": [
+                    {"label": "Гостиная", "room": "living_room"},
+                    {"label": "Кухня", "room": "kitchen"},
+                    {"label": "Спальня", "room": "bedroom"},
+                ],
+            },
+        )
+
+    if n in _CLARIFY_LIGHT_ON:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent=None,
+            entities={},
+            status="clarification_required",
+            clarification={
+                "reason": "missing_room",
+                "prompt": "В какой комнате включить свет?",
                 "options": [
                     {"label": "Гостиная", "room": "living_room"},
                     {"label": "Кухня", "room": "kitchen"},
