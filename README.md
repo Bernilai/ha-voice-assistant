@@ -93,9 +93,6 @@ npm run test
 - [docs/architecture.md](docs/architecture.md) — layers and boundaries  
 - [docs/api-contracts.md](docs/api-contracts.md) — HTTP contracts  
 - [docs/intent-catalog.md](docs/intent-catalog.md) — supported intents (honest subset)  
-- [docs/demo-script.md](docs/demo-script.md) — suggested demo flow  
-- [docs/acceptance-checklist.md](docs/acceptance-checklist.md) — review checklist  
-- Phased plan: [.cursor/plans/phased_mvp_implementation_b5c52a3c.plan.md](.cursor/plans/phased_mvp_implementation_b5c52a3c.plan.md)
 
 ## Scope and limitations (intentional)
 
