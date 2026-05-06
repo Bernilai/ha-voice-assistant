@@ -22,10 +22,36 @@ services:
       - HA_URL=${HA_URL:-http://homeassistant:8123}
       - HA_TOKEN=${HA_TOKEN:-}
       - VOICE_BRIDGE_ENABLED=${VOICE_BRIDGE_ENABLED:-}
+      - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
     depends_on:
       - homeassistant
+      - ollama
     entrypoint: []
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ha-mvp-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    # GPU (NVIDIA): раскомментируйте блок deploy ниже и удалите эту строку
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
 
   ui:
     image: node:20-bookworm-slim
@@ -44,3 +70,4 @@ services:
 
 volumes:
   ui_node_modules:
+  ollama_models:      # модели хранятся между перезапусками
