@@ -9,8 +9,8 @@ from app.models.intents import IntentInterpretResponse
 
 def _norm(text: str) -> str:
     t = text.strip().lower()
-    t = t.replace("ё", "е")
-    t = re.sub(r"[.!?,;:]+$", "")
+    t = t.replace("е", "е")
+    t = re.sub(r"[.!?,;:]+$", "", t)
     t = re.sub(r"\s+", " ", t)
     return t.strip()
 
