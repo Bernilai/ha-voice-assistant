@@ -146,23 +146,26 @@ User: какая температура в спальне
 
 
 def _call_ollama(text: str) -> dict | None:
+    """Call Ollama via /api/chat for reliable system prompt support."""
     payload = {
         "model": _OLLAMA_MODEL,
-        "prompt": f"User: {text}",
-        "system": _SYSTEM_PROMPT,
+        "messages": [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user", "content": text},
+        ],
         "stream": False,
         "format": "json",
         "options": {"temperature": 0.0, "num_predict": 256},
     }
     try:
         resp = httpx.post(
-            f"{_OLLAMA_URL}/api/generate",
+            f"{_OLLAMA_URL}/api/chat",
             json=payload,
             timeout=_OLLAMA_TIMEOUT,
         )
         resp.raise_for_status()
-        raw = resp.json().get("response", "")
-        # Strip markdown code fences if model wraps output (language tag is often mixed case)
+        raw = resp.json().get("message", {}).get("content", "")
+        # Strip markdown code fences if model wraps output
         raw = re.sub(r"^```[a-zA-Z]*\n?", "", raw.strip())
         raw = re.sub(r"```$", "", raw.strip())
         return json.loads(raw)
