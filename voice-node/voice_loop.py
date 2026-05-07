@@ -163,15 +163,15 @@ def _spoken_from_backend(resp: dict) -> str:
 # Слой 1 — Wake-word
 # ---------------------------------------------------------------------------
 
-async def _wait_wakeword() -> None:
-    log.info("Жду вейквord (скажите 'ассистент')...")
-    async with AsyncTcpClient(WAKEWORD_HOST, WAKEWORD_PORT) as client:
-        async for event in client:
-            if Detection.is_type(event.type):
-                det = Detection.from_event(event)
-                log.info("Вейквord: %s (score=%.3f)", det.name, det.score or 0.0)
-                return
-
+#async def _wait_wakeword() -> None:
+#    log.info("Жду вейквord (скажите 'ассистент')...")
+#    async with AsyncTcpClient(WAKEWORD_HOST, WAKEWORD_PORT) as client:
+#        async for event in client:
+#            if Detection.is_type(event.type):
+#                det = Detection.from_event(event)
+#                log.info("Вейквord: %s (score=%.3f)", det.name, det.score or 0.0)
+#                return
+#
 
 # ---------------------------------------------------------------------------
 # Слой 2 — STT (Whisper)
