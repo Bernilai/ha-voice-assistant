@@ -23,7 +23,9 @@ services:
       - HA_TOKEN=${HA_TOKEN:-}
       - VOICE_BRIDGE_ENABLED=${VOICE_BRIDGE_ENABLED:-}
       - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
+      - OLLAMA_NLU_ENABLED=${OLLAMA_NLU_ENABLED:-false}
+      - OLLAMA_TIMEOUT=${OLLAMA_TIMEOUT:-15}
     depends_on:
       - homeassistant
       - ollama
@@ -38,14 +40,16 @@ services:
       - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - ollama_models:/root/.ollama
-    # GPU (NVIDIA): раскомментируйте блок deploy ниже и удалите эту строку
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+    environment:
+      - OLLAMA_KEEP_ALIVE=-1
+
+    deploy:
+      resources:
+         reservations:
+           devices:
+             - driver: nvidia
+               count: 1
+               capabilities: [gpu]
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 30s

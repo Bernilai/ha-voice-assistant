@@ -14,7 +14,7 @@ This project is a local-first Russian-language smart home voice assistant MVP. I
 ### Backend (FastAPI)
 
 - **`GET /api/state/house`** — Reads HA `/api/states`, maps an MVP allowlist into normalized JSON (`version: "p3-ha"`).
-- **`POST /api/intents/interpret`** — Deterministic stub (phrase table); not NLP.
+- **`POST /api/intents/interpret`** — Deterministic stub (phrase table) first; optional **Ollama NLU fallback** when `OLLAMA_NLU_ENABLED=true` runs after unknown phrases, validates JSON against the same intent/entity allowlists as execute (see `backend/app/services/ollama_interpret.py`).
 - **`POST /api/intents/execute`** — Writes (lights, scenes) and read-only status intents (`get_room_status`, `get_device_status`, `get_sensor_status`) through dedicated services; compound two-step actions; light ambiguity can return `clarification_required` before any write.
 - **`POST /api/intents/clarify`** — Continues P5 execute-time clarification sessions only (TTL-bound, in-memory).
 - **`GET /api/events`** — In-memory event log, newest first; entries are append-only until a successful demo reset clears the log.
@@ -39,7 +39,7 @@ Home Assistant is the single source of truth for house/device state. The backend
 
 | Area | Behavior |
 |------|----------|
-| Interpret stub | Deterministic string matches. |
+| Interpret stub | Deterministic string matches; optional Ollama NLU only when enabled (`OLLAMA_NLU_ENABLED`), strict JSON validation against known intents/entities. |
 | Clarification matching | Deterministic token/alias/option rules. |
 | Replay step order and payloads | Fixed in code (deterministic catalog). |
 | HA `call_service` / reads | Best-effort; failures surface as `error` in execute responses or **503** on house read. |

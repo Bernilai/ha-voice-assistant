@@ -44,12 +44,17 @@ Text-first Russian smart home demo: **Home Assistant** is the source of truth fo
 | Home Assistant   | 8123      | `HOMEASSISTANT_PORT`    |
 | Backend API      | 8000      | `BACKEND_PORT`          |
 | Vite UI          | 5173      | `UI_PORT`               |
+| Ollama (optional)| 11434     | `OLLAMA_PORT`           |
 
 ### Backend ↔ Home Assistant
 
 - `HA_URL` (default `http://homeassistant:8123` in Compose) and `HA_TOKEN` configure the live HA client.
 - The backend container waits until TCP **8123** on the `homeassistant` service is open before starting Uvicorn.
 - Automated tests use an in-process **mock** HA client (`MockHomeAssistantClient`); they do not require a running Home Assistant.
+
+### Optional: Ollama NLU for unknown phrases
+
+The interpret path is normally a **deterministic phrase table**. To try LLM-backed interpretation for phrases the stub does not recognize, set **`OLLAMA_NLU_ENABLED=true`** in `.env` and ensure the **Ollama** service is running (Compose includes an `ollama` service). Relevant variables: **`OLLAMA_URL`**, **`OLLAMA_MODEL`**, **`OLLAMA_TIMEOUT`**. Model output is validated against fixed intent and entity allowlists; invalid JSON or incomplete entities still return **`unsupported`**. See [docs/architecture.md](docs/architecture.md) and [docs/api-contracts.md](docs/api-contracts.md).
 
 ## Run backend tests (host)
 
@@ -94,7 +99,7 @@ npm run test
 
 ## Scope and limitations (intentional)
 
-- **No general NLP**: `POST /api/intents/interpret` is a deterministic phrase table, not open-ended language understanding.
+- **No unconstrained NLP**: `POST /api/intents/interpret` is a deterministic phrase table by default; optional Ollama fallback (`OLLAMA_NLU_ENABLED`) still gates on strict backend validation, not free-form execution.
 - **Demo `mode` (`static` / `live` / `simulator`)** is an in-memory **operator label** (and a one-off `demo_set_mode` event when you call set-mode); execute/clarify/replay/reset **ignore** it. It does **not** switch execution engines or replace HA state.
 - **`POST /api/demo/reset`** is **not transactional**: baseline application runs as a best-effort sequence (or a single mock snapshot); on failure, the event log and clarification store are **not** cleared.
 - **`POST /api/demo/replay`** runs a **fixed catalog** of steps through the same execute path as normal commands; it is **not** a user-authored automation DSL. Replay stops on the first non-success step; an **unknown** `scenario_id` returns immediately and does **not** update `last_replay_summary` / `last_replay_at` in `GET /api/demo/status`.

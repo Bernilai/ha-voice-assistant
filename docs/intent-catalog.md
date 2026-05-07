@@ -87,10 +87,14 @@ Also supported:
 - `статус кухни`, `что на кухне` -> `get_room_status` / `room: kitchen`
 - `выключи свет` -> `clarification_required` (`missing_room`)
 
-Not in scope at this stage:
+### Optional: Ollama NLU fallback (off by default)
+
+If **`OLLAMA_NLU_ENABLED=true`** (see `.env.example`), unknown phrases are sent to a local **Ollama** instance after the stub misses. The LLM is constrained by a system prompt to emit JSON; the backend **validates** intents and entities against the same allowlists used elsewhere (rooms, `target_entity_id`, `device_type`, scene keys, and **`get_sensor_status` (room, sensor_kind) pairs** matching P4b / `status_resolver.py`). Invalid or incomplete model output yields **`status: "unsupported"`**, same as an unknown stub phrase. This does not replace deterministic demo behavior when the flag is off.
+
+Not in scope at this stage (when NLU is disabled or validation fails):
 
 - broad Russian paraphrase/synonym handling outside the fixed phrase table
-- open-ended natural-language interpretation
+- unconstrained open-ended natural-language interpretation without backend validation
 
 ## P9 voice subset (transcript bridge)
 

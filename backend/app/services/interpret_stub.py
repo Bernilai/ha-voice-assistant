@@ -1,16 +1,19 @@
-"""Deterministic text → stub interpretation (no NLP)."""
+"""Deterministic text → stub interpretation (no NLP). Ollama NLU fallback when enabled."""
 
 from __future__ import annotations
 
+import os
 import re
 
 from app.models.intents import IntentInterpretResponse
 
+_OLLAMA_NLU_ENABLED = os.environ.get("OLLAMA_NLU_ENABLED", "false").lower() == "true"
+
 
 def _norm(text: str) -> str:
     t = text.strip().lower()
-    t = t.replace("ё", "е")
-    t = re.sub(r"[.!?,;:]+$", "")
+    t = t.replace("е", "е")
+    t = re.sub(r"[.!?,;:]+$", "", t)
     t = re.sub(r"\s+", " ", t)
     return t.strip()
 
@@ -271,7 +274,7 @@ _CLARIFY_LIGHT_ON = {
 # ---------------------------------------------------------------------------
 
 def interpret_text(raw: str) -> IntentInterpretResponse:
-    """Tiny phrase table + fallbacks; no ML."""
+    """Phrase table lookup first; Ollama NLU fallback if enabled and phrase unknown."""
     n = _norm(raw)
 
     if n in _ON_KITCHEN_LIGHT:
@@ -499,6 +502,11 @@ def interpret_text(raw: str) -> IntentInterpretResponse:
                 ],
             },
         )
+
+    # --- Ollama NLU fallback ---
+    if _OLLAMA_NLU_ENABLED:
+        from app.services.ollama_interpret import ollama_interpret  # lazy import
+        return ollama_interpret(raw)
 
     return IntentInterpretResponse(
         raw_text=raw,
