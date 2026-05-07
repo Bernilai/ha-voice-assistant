@@ -82,7 +82,7 @@ Available intents and required entities:
 - turn_off_device: same as turn_on_device
 - activate_scene: {"scene": "movie|good_morning|evening|away"}
 - get_room_status: {"room": "kitchen|bedroom|living_room"}
-- get_sensor_status: {"room", "sensor_kind"} must be a supported pair: kitchen+temperature|window, bedroom+temperature|humidity, living_room+temperature|motion (same matrix as P4b status resolver)
+- get_sensor_status: {"room", "sensor_kind"} must be a supported pair: kitchen+temperature|window, bedroom+temperature|humidity, living_room+temperature|motion
 
 Known entity_ids:
 - light.kitchen_main, light.kitchen_accent
@@ -91,23 +91,64 @@ Known entity_ids:
 - switch.kitchen_kettle, switch.bedroom_heater
 - cover.living_room_curtains, cover.bedroom_curtains
 
-Scene keywords in Russian:
+Curtains rules:
+- "закрыть/закрой/задвинь/задвинуть штору/шторы" → turn_off_device, device_type=curtains
+- "открыть/открой/раздвинь/раздвинуть штору/шторы" → turn_on_device, device_type=curtains
+- гостиная/зал/гостиную → room=living_room, target_entity_id=cover.living_room_curtains
+- спальня/спальне/спальню → room=bedroom, target_entity_id=cover.bedroom_curtains
+- if room is missing → {"intent": null, "entities": {}}
+
+Scene keywords in Russian (ONLY these phrases map to scenes — curtains never map to scenes):
 - movie: режим кино, кинорежим, кино
 - good_morning: доброе утро, утренний режим
 - evening: вечерний режим, вечер
-- away: я ухожу, режим отсутствия
+- away: я ухожу, режим отсутствия, я ушёл, я ушла
 
 If you cannot determine the intent with confidence, respond:
 {"intent": null, "entities": {}}
 
 Do not add any explanation. Only JSON.
+
+Examples:
+User: включи свет на кухне
+{"intent": "turn_on_device", "entities": {"room": "kitchen", "device_type": "light", "target_entity_id": "light.kitchen_main"}}
+
+User: выключи свет в спальне
+{"intent": "turn_off_device", "entities": {"room": "bedroom", "device_type": "light", "target_entity_id": "light.bedroom_main"}}
+
+User: закрой шторы в гостиной
+{"intent": "turn_off_device", "entities": {"room": "living_room", "device_type": "curtains", "target_entity_id": "cover.living_room_curtains"}}
+
+User: открой штору в спальне
+{"intent": "turn_on_device", "entities": {"room": "bedroom", "device_type": "curtains", "target_entity_id": "cover.bedroom_curtains"}}
+
+User: задвинь шторы в спальне
+{"intent": "turn_off_device", "entities": {"room": "bedroom", "device_type": "curtains", "target_entity_id": "cover.bedroom_curtains"}}
+
+User: закрой штору
+{"intent": null, "entities": {}}
+
+User: включи режим кино
+{"intent": "activate_scene", "entities": {"scene": "movie"}}
+
+User: я ухожу
+{"intent": "activate_scene", "entities": {"scene": "away"}}
+
+User: включи чайник
+{"intent": "turn_on_device", "entities": {"room": "kitchen", "device_type": "kettle", "target_entity_id": "switch.kitchen_kettle"}}
+
+User: статус кухни
+{"intent": "get_room_status", "entities": {"room": "kitchen"}}
+
+User: какая температура в спальне
+{"intent": "get_sensor_status", "entities": {"room": "bedroom", "sensor_kind": "temperature"}}
 """
 
 
 def _call_ollama(text: str) -> dict | None:
     payload = {
         "model": _OLLAMA_MODEL,
-        "prompt": f"User command: {text}",
+        "prompt": f"User: {text}",
         "system": _SYSTEM_PROMPT,
         "stream": False,
         "format": "json",
