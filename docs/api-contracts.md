@@ -28,7 +28,9 @@ Query:
 - Response field `order` is always `newest_first` (most recently appended event first).
 
 ### POST /api/intents/interpret
-P1 baseline: deterministic stub (phrase table, not NLP). Converts raw user text into a **pre-execution** shape the UI or console can display and optionally map to `POST /api/intents/execute`.
+P1 baseline: deterministic stub (phrase table, not NLP by default). Converts raw user text into a **pre-execution** shape the UI or console can display and optionally map to `POST /api/intents/execute`.
+
+**Optional Ollama NLU:** When `OLLAMA_NLU_ENABLED=true`, phrases that do not match the stub table are sent to an Ollama model (`OLLAMA_URL`, `OLLAMA_MODEL`, `OLLAMA_TIMEOUT`). The model must return JSON `{ "intent", "entities" }` with **`entities` as an object** (not an array); the backend **rejects** outputs that fail validation (unknown intents, missing required entities such as `device_type` for device commands, `get_sensor_status` **room + sensor_kind pairs** that are not in the P4b matrix below, unknown `target_entity_id`, etc.) and responds with `status: "unsupported"` — same as a failed stub match. Default / demo expectation remains deterministic stub-only (`OLLAMA_NLU_ENABLED=false`).
 
 Request JSON:
 

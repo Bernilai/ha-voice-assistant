@@ -11,12 +11,34 @@ import httpx
 
 from app.intents.constants import P4A_SCENE_KEYS
 from app.models.intents import IntentInterpretResponse
+from app.services.status_resolver import P4B_SENSOR_STATUS_PAIRS
 
 logger = logging.getLogger(__name__)
 
+_DEFAULT_OLLAMA_TIMEOUT_SEC = 15.0
+
+
+def _parse_ollama_timeout_seconds(raw: str | None) -> float:
+    """Parse OLLAMA_TIMEOUT; invalid or empty values log a warning and fall back to default."""
+    if raw is None:
+        return _DEFAULT_OLLAMA_TIMEOUT_SEC
+    s = str(raw).strip()
+    if not s:
+        return _DEFAULT_OLLAMA_TIMEOUT_SEC
+    try:
+        return float(s)
+    except ValueError:
+        logger.warning(
+            "Invalid OLLAMA_TIMEOUT=%r (expected a number); using %.1f seconds",
+            raw,
+            _DEFAULT_OLLAMA_TIMEOUT_SEC,
+        )
+        return _DEFAULT_OLLAMA_TIMEOUT_SEC
+
+
 _OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://ollama:11434")
 _OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:3b")
-_OLLAMA_TIMEOUT = float(os.environ.get("OLLAMA_TIMEOUT", "15"))
+_OLLAMA_TIMEOUT = _parse_ollama_timeout_seconds(os.environ.get("OLLAMA_TIMEOUT"))
 
 # Known entity_ids for validation
 _KNOWN_ENTITIES: frozenset[str] = frozenset({
@@ -43,6 +65,8 @@ _VALID_INTENTS: frozenset[str] = frozenset({
 
 _VALID_ROOMS: frozenset[str] = frozenset({"kitchen", "bedroom", "living_room"})
 
+_VALID_DEVICE_TYPES: frozenset[str] = frozenset({"light", "kettle", "heater", "curtains"})
+
 _SYSTEM_PROMPT = """\
 You are a smart home NLU assistant. The user speaks Russian.
 Extract intent and entities from the user's command.
@@ -58,7 +82,7 @@ Available intents and required entities:
 - turn_off_device: same as turn_on_device
 - activate_scene: {"scene": "movie|good_morning|evening|away"}
 - get_room_status: {"room": "kitchen|bedroom|living_room"}
-- get_sensor_status: {"room": "kitchen|bedroom|living_room", "sensor_kind": "temperature|humidity"}
+- get_sensor_status: {"room", "sensor_kind"} must be a supported pair: kitchen+temperature|window, bedroom+temperature|humidity, living_room+temperature|motion (same matrix as P4b status resolver)
 
 Known entity_ids:
 - light.kitchen_main, light.kitchen_accent
@@ -97,12 +121,14 @@ def _call_ollama(text: str) -> dict | None:
         )
         resp.raise_for_status()
         raw = resp.json().get("response", "")
-        # Strip markdown code fences if model wraps in ```json
-        raw = re.sub(r"^```[a-z]*\n?", "", raw.strip())
+        # Strip markdown code fences if model wraps output (language tag is often mixed case)
+        raw = re.sub(r"^```[a-zA-Z]*\n?", "", raw.strip())
         raw = re.sub(r"```$", "", raw.strip())
         return json.loads(raw)
     except httpx.TimeoutException:
         logger.warning("Ollama NLU timeout for: %s", text)
+    except httpx.HTTPStatusError as e:
+        logger.warning("Ollama NLU HTTP error: %s", e)
     except httpx.RequestError as e:
         logger.warning("Ollama NLU request error: %s", e)
     except (json.JSONDecodeError, ValueError) as e:
@@ -113,7 +139,12 @@ def _call_ollama(text: str) -> dict | None:
 def _validate(parsed: dict) -> IntentInterpretResponse | None:
     """Validate Ollama output against known intents/entities. Returns None if invalid."""
     intent = parsed.get("intent")
-    entities = parsed.get("entities", {}) or {}
+    raw_entities = parsed.get("entities", {})
+    if raw_entities is None:
+        raw_entities = {}
+    if not isinstance(raw_entities, dict):
+        return None
+    entities: dict = raw_entities
 
     if not intent or intent not in _VALID_INTENTS:
         return None
@@ -126,13 +157,24 @@ def _validate(parsed: dict) -> IntentInterpretResponse | None:
         room = entities.get("room")
         if room not in _VALID_ROOMS:
             return None
+        dt = entities.get("device_type")
+        if dt not in _VALID_DEVICE_TYPES:
+            return None
 
     if intent == "activate_scene":
         if entities.get("scene") not in P4A_SCENE_KEYS:
             return None
 
-    if intent in ("get_room_status", "get_sensor_status"):
+    if intent == "get_room_status":
         if entities.get("room") not in _VALID_ROOMS:
+            return None
+
+    if intent == "get_sensor_status":
+        room = entities.get("room")
+        kind = entities.get("sensor_kind")
+        if not isinstance(room, str) or not isinstance(kind, str):
+            return None
+        if (room, kind) not in P4B_SENSOR_STATUS_PAIRS:
             return None
 
     return IntentInterpretResponse(

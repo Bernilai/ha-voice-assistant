@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Final
 
 # MVP rooms aligned with ha_house_mapper / P4a primary lights.
 _SUPPORTED_ROOMS: frozenset[str] = frozenset({"living_room", "kitchen", "bedroom"})
@@ -23,6 +23,9 @@ _SENSOR_ENTITY: dict[tuple[str, str], str] = {
     ("bedroom", "temperature"): "sensor.bedroom_temperature",
     ("bedroom", "humidity"): "sensor.bedroom_humidity",
 }
+
+# Exposed for NLU / validation layers; keep in sync with _resolve_sensor.
+P4B_SENSOR_STATUS_PAIRS: Final[frozenset[tuple[str, str]]] = frozenset(_SENSOR_ENTITY.keys())
 
 
 class StatusResolutionError(Exception):
