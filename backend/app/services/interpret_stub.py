@@ -19,6 +19,34 @@ def _norm(text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Temperature helpers
+# ---------------------------------------------------------------------------
+
+_RE_TEMP = re.compile(r"(\d+)\s*(?:градус(?:ов|а|)?|°c|°)", re.IGNORECASE)
+
+
+def _extract_temp(text: str) -> int | None:
+    m = _RE_TEMP.search(text)
+    return int(m.group(1)) if m else None
+
+
+def _kettle_temp(text: str) -> int | None:
+    """Return validated kettle temperature (40-100) or None if out of range."""
+    t = _extract_temp(text)
+    if t is None:
+        return None
+    return t if 40 <= t <= 100 else None
+
+
+def _heater_temp(text: str) -> int | None:
+    """Return validated heater temperature (10-35) or None if out of range."""
+    t = _extract_temp(text)
+    if t is None:
+        return None
+    return t if 10 <= t <= 35 else None
+
+
+# ---------------------------------------------------------------------------
 # Phrase tables  (imperative + infinitive + we-form + common STT variants)
 # ---------------------------------------------------------------------------
 
@@ -42,6 +70,28 @@ _OFF_KITCHEN_LIGHT = {
     "свет на кухне выключить",
 }
 
+_ON_KITCHEN_ACCENT = {
+    "включи подсветку на кухне",
+    "включите подсветку на кухне",
+    "включить подсветку на кухне",
+    "включим подсветку на кухне",
+    "подсветка на кухне включи",
+    "подсветка кухни включи",
+    "включи кухонную подсветку",
+    "включить кухонную подсветку",
+}
+
+_OFF_KITCHEN_ACCENT = {
+    "выключи подсветку на кухне",
+    "выключите подсветку на кухне",
+    "выключить подсветку на кухне",
+    "выключим подсветку на кухне",
+    "подсветка на кухне выключи",
+    "подсветка кухни выключи",
+    "выключи кухонную подсветку",
+    "выключить кухонную подсветку",
+}
+
 _ON_LIVING_LIGHT = {
     "включи свет в гостиной",
     "включите свет в гостиной",
@@ -60,6 +110,28 @@ _OFF_LIVING_LIGHT = {
     "свет в гостиной выключить",
 }
 
+_ON_LIVING_FLOOR_LAMP = {
+    "включи торшер в гостиной",
+    "включите торшер в гостиной",
+    "включить торшер в гостиной",
+    "включим торшер в гостиной",
+    "торшер в гостиной включи",
+    "торшер включи",
+    "включи торшер",
+    "включить торшер",
+}
+
+_OFF_LIVING_FLOOR_LAMP = {
+    "выключи торшер в гостиной",
+    "выключите торшер в гостиной",
+    "выключить торшер в гостиной",
+    "выключим торшер в гостиной",
+    "торшер в гостиной выключи",
+    "торшер выключи",
+    "выключи торшер",
+    "выключить торшер",
+}
+
 _ON_BEDROOM_LIGHT = {
     "включи свет в спальне",
     "включите свет в спальне",
@@ -76,6 +148,28 @@ _OFF_BEDROOM_LIGHT = {
     "выключим свет в спальне",
     "свет в спальне выключи",
     "свет в спальне выключить",
+}
+
+_ON_BEDROOM_BEDSIDE = {
+    "включи прикроватный свет",
+    "включить прикроватный свет",
+    "включите прикроватный свет",
+    "включим прикроватный свет",
+    "включи ночник",
+    "включить ночник",
+    "ночник включи",
+    "прикроватный свет включи",
+}
+
+_OFF_BEDROOM_BEDSIDE = {
+    "выключи прикроватный свет",
+    "выключить прикроватный свет",
+    "выключите прикроватный свет",
+    "выключим прикроватный свет",
+    "выключи ночник",
+    "выключить ночник",
+    "ночник выключи",
+    "прикроватный свет выключи",
 }
 
 _OPEN_LIVING_CURTAINS = {
@@ -134,6 +228,13 @@ _OFF_KETTLE = {
     "чайник выключить",
 }
 
+# Kettle temperature patterns (with explicit degree mention)
+_RE_KETTLE_TEMP = re.compile(
+    r"(?:вскипяти|подогрей|нагрей|включи чайник до|поставь чайник до|чайник до|нагреть до|подогреть до)"
+    r".*?(\d+)\s*(?:градус(?:ов|а|)?|°c|°)",
+    re.IGNORECASE,
+)
+
 _ON_HEATER = {
     "включи обогреватель в спальне",
     "включите обогреватель в спальне",
@@ -155,6 +256,14 @@ _OFF_HEATER = {
     "выключи обогреватель",
     "выключить обогреватель",
 }
+
+# Heater temperature patterns
+_RE_HEATER_TEMP = re.compile(
+    r"(?:установи|поставь|выставь|установить|задай|задать)\s+(?:температуру\s+)?(?:обогревателя?\s+)?(?:на\s+)?"
+    r"(\d+)\s*(?:градус(?:ов|а|)?|°c|°)"
+    r"|(?:обогреватель|обогрей).*?(\d+)\s*(?:градус(?:ов|а|)?|°c|°)",
+    re.IGNORECASE,
+)
 
 _TEMP_BEDROOM = {
     "какая температура в спальне",
@@ -178,6 +287,28 @@ _TEMP_LIVING = {
     "какая температура гостиной",
     "температура гостиной",
     "сколько градусов в гостиной",
+}
+
+_HUMIDITY_BEDROOM = {
+    "влажность в спальне",
+    "какая влажность в спальне",
+    "влажность спальни",
+    "сколько влажность в спальне",
+    "покажи влажность в спальне",
+}
+
+_STATUS_WINDOW_KITCHEN = {
+    "окно на кухне",
+    "открыто ли окно на кухне",
+    "статус окна на кухне",
+    "окно кухни",
+}
+
+_STATUS_MOTION_LIVING = {
+    "движение в гостиной",
+    "есть ли движение в гостиной",
+    "статус движения в гостиной",
+    "датчик движения в гостиной",
 }
 
 # Scenes -----------------------------------------------------------------------
@@ -293,6 +424,22 @@ def interpret_text(raw: str) -> IntentInterpretResponse:
             status="success",
         )
 
+    if n in _ON_KITCHEN_ACCENT:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="turn_on_device",
+            entities={"room": "kitchen", "device_type": "light", "target_entity_id": "light.kitchen_accent"},
+            status="success",
+        )
+
+    if n in _OFF_KITCHEN_ACCENT:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="turn_off_device",
+            entities={"room": "kitchen", "device_type": "light", "target_entity_id": "light.kitchen_accent"},
+            status="success",
+        )
+
     if n in _ON_LIVING_LIGHT:
         return IntentInterpretResponse(
             raw_text=raw, normalized_text=n,
@@ -309,6 +456,22 @@ def interpret_text(raw: str) -> IntentInterpretResponse:
             status="success",
         )
 
+    if n in _ON_LIVING_FLOOR_LAMP:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="turn_on_device",
+            entities={"room": "living_room", "device_type": "light", "target_entity_id": "light.living_room_floor_lamp"},
+            status="success",
+        )
+
+    if n in _OFF_LIVING_FLOOR_LAMP:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="turn_off_device",
+            entities={"room": "living_room", "device_type": "light", "target_entity_id": "light.living_room_floor_lamp"},
+            status="success",
+        )
+
     if n in _ON_BEDROOM_LIGHT:
         return IntentInterpretResponse(
             raw_text=raw, normalized_text=n,
@@ -322,6 +485,22 @@ def interpret_text(raw: str) -> IntentInterpretResponse:
             raw_text=raw, normalized_text=n,
             canonical_intent="turn_off_device",
             entities={"room": "bedroom", "device_type": "light", "target_entity_id": "light.bedroom_main"},
+            status="success",
+        )
+
+    if n in _ON_BEDROOM_BEDSIDE:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="turn_on_device",
+            entities={"room": "bedroom", "device_type": "light", "target_entity_id": "light.bedroom_bedside"},
+            status="success",
+        )
+
+    if n in _OFF_BEDROOM_BEDSIDE:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="turn_off_device",
+            entities={"room": "bedroom", "device_type": "light", "target_entity_id": "light.bedroom_bedside"},
             status="success",
         )
 
@@ -373,6 +552,41 @@ def interpret_text(raw: str) -> IntentInterpretResponse:
             status="success",
         )
 
+    # Kettle with temperature: "вскипяти до 80 градусов", "нагрей чайник до 60°", etc.
+    m_kettle = _RE_KETTLE_TEMP.search(n)
+    if m_kettle:
+        t = int(m_kettle.group(1))
+        if 40 <= t <= 100:
+            return IntentInterpretResponse(
+                raw_text=raw, normalized_text=n,
+                canonical_intent="set_temperature",
+                entities={
+                    "device_type": "kettle",
+                    "target_entity_id": "switch.kitchen_kettle",
+                    "target_temp": t,
+                },
+                status="success",
+            )
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent=None, entities={}, status="unsupported",
+            clarification={"reason": "temp_out_of_range",
+                           "prompt": "Для чайника допустимая температура от 40 до 100 градусов."},
+        )
+
+    # Kettle: explicit keyword but no temperature → 100°C default
+    if re.search(r"(?:вскипяти|вскипятить|подогрей|нагрей чайник|нагреть чайник)", n):
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="set_temperature",
+            entities={
+                "device_type": "kettle",
+                "target_entity_id": "switch.kitchen_kettle",
+                "target_temp": 100,
+            },
+            status="success",
+        )
+
     if n in _ON_HEATER:
         return IntentInterpretResponse(
             raw_text=raw, normalized_text=n,
@@ -387,6 +601,28 @@ def interpret_text(raw: str) -> IntentInterpretResponse:
             canonical_intent="turn_off_device",
             entities={"room": "bedroom", "device_type": "heater", "target_entity_id": "switch.bedroom_heater"},
             status="success",
+        )
+
+    # Heater with temperature
+    m_heater = _RE_HEATER_TEMP.search(n)
+    if m_heater:
+        t = int(m_heater.group(1) or m_heater.group(2))
+        if 10 <= t <= 35:
+            return IntentInterpretResponse(
+                raw_text=raw, normalized_text=n,
+                canonical_intent="set_temperature",
+                entities={
+                    "device_type": "heater",
+                    "target_entity_id": "climate.bedroom_heater",
+                    "target_temp": t,
+                },
+                status="success",
+            )
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent=None, entities={}, status="unsupported",
+            clarification={"reason": "temp_out_of_range",
+                           "prompt": "Для обогревателя допустимая температура от 10 до 35 градусов."},
         )
 
     if n in _TEMP_BEDROOM:
@@ -410,6 +646,30 @@ def interpret_text(raw: str) -> IntentInterpretResponse:
             raw_text=raw, normalized_text=n,
             canonical_intent="get_sensor_status",
             entities={"room": "living_room", "sensor_kind": "temperature"},
+            status="success",
+        )
+
+    if n in _HUMIDITY_BEDROOM:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="get_sensor_status",
+            entities={"room": "bedroom", "sensor_kind": "humidity"},
+            status="success",
+        )
+
+    if n in _STATUS_WINDOW_KITCHEN:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="get_device_status",
+            entities={"room": "kitchen", "device_type": "window", "target_entity_id": "binary_sensor.kitchen_window"},
+            status="success",
+        )
+
+    if n in _STATUS_MOTION_LIVING:
+        return IntentInterpretResponse(
+            raw_text=raw, normalized_text=n,
+            canonical_intent="get_device_status",
+            entities={"room": "living_room", "device_type": "motion", "target_entity_id": "binary_sensor.living_room_motion"},
             status="success",
         )
 
