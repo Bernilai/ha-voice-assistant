@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from app.intents.constants import P4A_SCENE_KEYS
+from app.intents.constants import P4A_SCENE_KEYS, SET_TEMP_DEVICES
 
 
 class EntityResolutionError(Exception):
@@ -24,6 +24,13 @@ class ResolvedDeviceAction:
 @dataclass(frozen=True)
 class ResolvedSceneAction:
     scene_entity_id: str
+
+
+@dataclass(frozen=True)
+class ResolvedTempAction:
+    entity_id: str
+    target_temp: int
+    device_type: str
 
 
 # MVP lights per room (order stable for clarification options).
@@ -74,11 +81,15 @@ _ROOM_REPLY_TOKENS: dict[str, str] = {
 }
 
 
-def resolve_for_intent(intent: str, entities: dict[str, Any]) -> ResolvedDeviceAction | ResolvedSceneAction:
+def resolve_for_intent(
+    intent: str, entities: dict[str, Any]
+) -> ResolvedDeviceAction | ResolvedSceneAction | ResolvedTempAction:
     if intent in ("turn_on_device", "turn_off_device"):
         return _resolve_device(intent, entities)
     if intent == "activate_scene":
         return _resolve_scene(entities)
+    if intent == "set_temperature":
+        return _resolve_temp(entities)
     raise EntityResolutionError("unsupported_intent", f"Intent is not supported for execution: {intent}")
 
 
@@ -159,3 +170,23 @@ def _resolve_scene(entities: dict[str, Any]) -> ResolvedSceneAction:
     if key not in P4A_SCENE_KEYS:
         raise EntityResolutionError("unsupported_target", f"Unknown scene key for P4a: {key!r}.")
     return ResolvedSceneAction(scene_entity_id=f"scene.{key}")
+
+
+def _resolve_temp(entities: dict[str, Any]) -> ResolvedTempAction:
+    device_type = entities.get("device_type")
+    target_entity_id = entities.get("target_entity_id")
+    target_temp = entities.get("target_temp")
+    if device_type not in SET_TEMP_DEVICES:
+        raise EntityResolutionError(
+            "unsupported_target",
+            f"set_temperature is not supported for device_type {device_type!r}.",
+        )
+    if not isinstance(target_entity_id, str):
+        raise EntityResolutionError("unsupported_target", "set_temperature requires entities.target_entity_id.")
+    if not isinstance(target_temp, int):
+        raise EntityResolutionError("unsupported_target", "set_temperature requires entities.target_temp as int.")
+    return ResolvedTempAction(
+        entity_id=target_entity_id,
+        target_temp=target_temp,
+        device_type=device_type,
+    )

@@ -12,6 +12,7 @@ from app.services.entity_resolver import (
     EntityResolutionError,
     ResolvedDeviceAction,
     ResolvedSceneAction,
+    ResolvedTempAction,
     resolve_for_intent,
 )
 from app.services.event_log import EventLogService
@@ -70,6 +71,8 @@ class ScenarioEngine:
 
         if isinstance(resolved, ResolvedDeviceAction):
             return self._execute_device(resolved, intent, trace_base)
+        if isinstance(resolved, ResolvedTempAction):
+            return self._execute_temp(resolved, intent, trace_base)
         return self._execute_scene(resolved, intent, trace_base)
 
     def _execute_device(
@@ -110,6 +113,46 @@ class ScenarioEngine:
         return ExecutionResponseBuilder.success(
             spoken_response=spoken,
             ui_message=f"HA {action} {entity_id}",
+            affected_entities=[entity_id],
+            trace=trace,
+        )
+
+    def _execute_temp(
+        self,
+        resolved: ResolvedTempAction,
+        intent: str,
+        trace_base: dict[str, Any],
+    ) -> IntentExecuteResponse:
+        entity_id = resolved.entity_id
+        temp = resolved.target_temp
+        device_type = resolved.device_type
+        trace = trace_base | {"resolved_entity_id": entity_id, "ha_action": "set_temperature", "target_temp": temp}
+        try:
+            self._ha_write.set_temperature(entity_id, temp)
+        except HomeAssistantIntegrationError as e:
+            self._events.append(
+                "intent_execute_error",
+                f"HA failure: {e.code}",
+                {"intent": intent, "entity_id": entity_id, "code": e.code},
+            )
+            return ExecutionResponseBuilder.error(
+                spoken_response="Не удалось установить температуру.",
+                ui_message=e.message,
+                error_code=e.code,
+                error_message=e.message,
+                affected_entities=[entity_id],
+                trace=trace | {"ha_error": e.code},
+            )
+
+        spoken = _spoken_set_temp(device_type, temp)
+        self._events.append(
+            "intent_execute_success",
+            f"set_temperature {entity_id} → {temp}°C",
+            {"intent": intent, "entity_id": entity_id, "target_temp": temp},
+        )
+        return ExecutionResponseBuilder.success(
+            spoken_response=spoken,
+            ui_message=f"HA set_temperature {entity_id} → {temp}°C",
             affected_entities=[entity_id],
             trace=trace,
         )
@@ -155,25 +198,39 @@ class ScenarioEngine:
 def _spoken_turn_on(entity_id: str) -> str:
     return {
         "light.kitchen_main": "Включаю основной свет на кухне.",
+        "light.kitchen_accent": "Включаю подсветку на кухне.",
         "light.living_room_main": "Включаю основной свет в гостиной.",
+        "light.living_room_floor_lamp": "Включаю торшер в гостиной.",
         "light.bedroom_main": "Включаю основной свет в спальне.",
+        "light.bedroom_bedside": "Включаю прикроватный свет в спальне.",
         "cover.living_room_curtains": "Открываю шторы в гостиной.",
         "cover.bedroom_curtains": "Открываю шторы в спальне.",
-        "switch.kitchen_kettle": "Включаю чайник на кухне.",
+        "switch.kitchen_kettle": "Включаю чайник.",
         "switch.bedroom_heater": "Включаю обогреватель в спальне.",
-    }.get(entity_id, "Включаю свет.")
+    }.get(entity_id, "Включаю устройство.")
 
 
 def _spoken_turn_off(entity_id: str) -> str:
     return {
         "light.kitchen_main": "Выключаю основной свет на кухне.",
+        "light.kitchen_accent": "Выключаю подсветку на кухне.",
         "light.living_room_main": "Выключаю основной свет в гостиной.",
+        "light.living_room_floor_lamp": "Выключаю торшер в гостиной.",
         "light.bedroom_main": "Выключаю основной свет в спальне.",
+        "light.bedroom_bedside": "Выключаю прикроватный свет в спальне.",
         "cover.living_room_curtains": "Закрываю шторы в гостиной.",
         "cover.bedroom_curtains": "Закрываю шторы в спальне.",
-        "switch.kitchen_kettle": "Выключаю чайник на кухне.",
+        "switch.kitchen_kettle": "Выключаю чайник.",
         "switch.bedroom_heater": "Выключаю обогреватель в спальне.",
-    }.get(entity_id, "Выключаю свет.")
+    }.get(entity_id, "Выключаю устройство.")
+
+
+def _spoken_set_temp(device_type: str, temp: int) -> str:
+    if device_type == "kettle":
+        return f"Нагреваю воду до {temp} градусов."
+    if device_type == "heater":
+        return f"Устанавливаю температуру обогревателя {temp} градусов."
+    return f"Устанавливаю температуру {temp} градусов."
 
 
 def _spoken_scene(scene_entity_id: str) -> str:
