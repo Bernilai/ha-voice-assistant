@@ -24,7 +24,7 @@ services:
       - VOICE_BRIDGE_ENABLED=${VOICE_BRIDGE_ENABLED:-}
       - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
-      - OLLAMA_NLU_ENABLED=${OLLAMA_NLU_ENABLED:-false}
+      - OLLAMA_NLU_ENABLED=${OLLAMA_NLU_ENABLED:-true}
       - OLLAMA_TIMEOUT=${OLLAMA_TIMEOUT:-15}
     depends_on:
       - homeassistant
