@@ -65,7 +65,7 @@ def voice_transcript(body: VoiceTranscriptRequest, ctx: AppStateDep) -> VoicePro
     if not raw:
         return voice_process_fallback(
             transcript=body.transcript,
-            message_ru="Пустой транскрипт.",
+            message_ru="Не расслышал, повторите.",
             policy_reason="empty_transcript",
             interpret=None,
             execute=None,
@@ -88,10 +88,7 @@ def voice_transcript(body: VoiceTranscriptRequest, ctx: AppStateDep) -> VoicePro
         )
         return voice_process_fallback(
             transcript=raw,
-            message_ru=(
-                "Эта фраза требует уточнения на этапе interpret. Голосовой транскрипт-мост её не выполняет — "
-                "введите команду в текстовой консоли или используйте POST /api/intents/interpret."
-            ),
+            message_ru="Уточните команду.",
             policy_reason="interpret_clarification_not_supported_via_voice",
             interpret=interp,
             execute=None,
@@ -104,7 +101,7 @@ def voice_transcript(body: VoiceTranscriptRequest, ctx: AppStateDep) -> VoicePro
         )
         return voice_process_fallback(
             transcript=raw,
-            message_ru="Фраза не распознана заглушкой interpret. Используйте текстовую консоль или расширьте сценарий вручную.",
+            message_ru="Не понял команду, попробуйте ещё раз.",
             policy_reason="interpret_unsupported",
             interpret=interp,
             execute=None,
@@ -119,7 +116,7 @@ def voice_transcript(body: VoiceTranscriptRequest, ctx: AppStateDep) -> VoicePro
         )
         return voice_process_fallback(
             transcript=raw,
-            message_ru="Фраза вне узкого голосового подмножества для автозапуска execute. Используйте текстовый путь.",
+            message_ru="Эта команда доступна только в текстовом режиме.",
             policy_reason=policy,
             interpret=interp,
             execute=None,
@@ -148,10 +145,7 @@ def voice_transcript(body: VoiceTranscriptRequest, ctx: AppStateDep) -> VoicePro
         )
         return voice_process_fallback(
             transcript=raw,
-            message_ru=(
-                "Команда требует уточнения на execute (например несколько светильников). "
-                "Голосовой мост не продолжает сессию — используйте текст и POST /api/intents/clarify."
-            ),
+            message_ru="Уточните, какой именно светильник.",
             policy_reason="execute_clarification_not_supported_via_voice",
             interpret=interp,
             execute=ex,
@@ -164,8 +158,8 @@ def voice_transcript(body: VoiceTranscriptRequest, ctx: AppStateDep) -> VoicePro
         {"transcript": raw, "intent": req.intent, "execute_status": ex.status},
     )
     msg = (
-        "Команда выполнена через голосовой транскрипт-мост (тот же execute, что и у текста)."
+        "Готово."
         if ex.status == "success"
-        else "Выполнение через транскрипт-мост завершилось ошибкой; детали в execute."
+        else "Не удалось выполнить команду."
     )
     return voice_process_executed(transcript=raw, message_ru=msg, interpret=interp, execute=ex)
